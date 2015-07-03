@@ -1,6 +1,10 @@
 package com.example.administrator.myapplication;
 
+import android.app.Activity;
 import android.content.DialogInterface;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -11,12 +15,16 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends Activity implements  View.OnClickListener {
     EditText text_word;
     TextView find;
     Button button_search;
     Dictionary dict;
     String word;
+
+    SQLiteDatabase database;
+    SQLiteOpenHelper helper;
+//    String dbName = "dictionary.db";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,17 +35,39 @@ public class MainActivity extends ActionBarActivity {
         button_search = (Button) findViewById(R.id.button_find);
         find = (TextView) findViewById(R.id.textView_find);
 
-        Button.OnClickListener mClickListener = new View.OnClickListener() {
-            public void onClick(View v) {
-                word = text_word.getText().toString();
-                find.setText(dict.find(word));
-            }
-        };
+        button_search.setOnClickListener((View.OnClickListener)this);
 
-        button_search.setOnClickListener(mClickListener);
         dict = new Dictionary("a.dic");
     }
 
+    @Override
+    public void onClick(View v){
+
+        switch(v.getId()) {
+            case R.id.button_find :
+                word = text_word.getText().toString();
+                String sql = "select meaning from Dictionary where word = '" + word + "';";
+               // find_db(sql);
+                if(find==null)
+                    find.setText("¸øÃ£À½");
+                else
+                    find.setText(dict.find(word));
+        }
+    }
+
+    public void find_db(String sql) {
+        database = helper.getReadableDatabase();
+        Cursor c = database.rawQuery(sql, null);
+        String meaning = "";
+        if (c.moveToFirst()) {
+            do {
+                meaning = c.getString(0);
+//                find.setText(meaning);
+            } while (c.moveToNext());
+        }
+        c.close();
+        database.close();
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.

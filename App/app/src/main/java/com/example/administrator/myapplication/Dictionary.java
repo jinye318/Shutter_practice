@@ -18,7 +18,8 @@ public class Dictionary {
     }
 
     Dictionary(String filename) {
-        dic = new HashMap<String, String>();
+
+         dic = new HashMap<String, String>();
 
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filename), "UTF-8"));
