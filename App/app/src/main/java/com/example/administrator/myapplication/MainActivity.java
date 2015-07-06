@@ -19,12 +19,10 @@ public class MainActivity extends Activity implements  View.OnClickListener {
     EditText text_word;
     TextView find;
     Button button_search;
-    Dictionary dict;
     String word;
 
-    SQLiteDatabase database;
-    SQLiteOpenHelper helper;
-//    String dbName = "dictionary.db";
+    SQLiteDatabase db;
+    MySQLiteOpenHelper mHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,8 +34,8 @@ public class MainActivity extends Activity implements  View.OnClickListener {
         find = (TextView) findViewById(R.id.textView_find);
 
         button_search.setOnClickListener((View.OnClickListener)this);
-
-        dict = new Dictionary("a.dic");
+        mHelper = new MySQLiteOpenHelper(this);
+        //dict = new Dictionary("a.dic");
     }
 
     @Override
@@ -45,19 +43,47 @@ public class MainActivity extends Activity implements  View.OnClickListener {
 
         switch(v.getId()) {
             case R.id.button_find :
-                word = text_word.getText().toString();
+/*                word = text_word.getText().toString();
                 String sql = "select meaning from Dictionary where word = '" + word + "';";
-               // find_db(sql);
-                if(find==null)
-                    find.setText("¸øÃ£À½");
+                //find_db(sql);
+                if(find.equals(""))
+                    find.setText("appï¿½ï¿½Ã£ï¿½ï¿½");
                 else
-                    find.setText(dict.find(word));
+                    find.setText(dict.find(word));*/
+
+                search();
+                break;
         }
     }
 
+    public void search() {
+        db = mHelper.getReadableDatabase();
+        Cursor cursor;
+        word = text_word.getText().toString();
+
+        String sql = "SELECT word, meaning from Dictionary where word='" + word + "'";
+        cursor = db.rawQuery(sql, null);
+
+        String result = "";
+        while (cursor.moveToNext()) {
+            String word = cursor.getString(0);
+            String meaning = cursor.getString(1);
+            result += (word + " : " + meaning + "\n");
+        }
+
+        if(result.length()==0)
+            find.setText("not found");
+        else
+            find.setText(result);
+
+        cursor.close();
+        mHelper.close();
+    }
+
+
     public void find_db(String sql) {
-        database = helper.getReadableDatabase();
-        Cursor c = database.rawQuery(sql, null);
+        db = mHelper.getReadableDatabase();
+        Cursor c = db.rawQuery(sql, null);
         String meaning = "";
         if (c.moveToFirst()) {
             do {
@@ -66,7 +92,7 @@ public class MainActivity extends Activity implements  View.OnClickListener {
             } while (c.moveToNext());
         }
         c.close();
-        database.close();
+        db.close();
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -86,7 +112,6 @@ public class MainActivity extends Activity implements  View.OnClickListener {
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 }
