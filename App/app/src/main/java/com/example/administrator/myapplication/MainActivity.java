@@ -4,96 +4,131 @@ import android.app.Activity;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+//1. db에서 단어를 가져와 list에 저장한다.
+//2. 검색 시 단어의 의미를 db에서 가져온다.
+//3. 리스트뷰 setSelectionFromTop
 
 
 public class MainActivity extends Activity implements  View.OnClickListener {
-    EditText text_word;
-    TextView find;
-    Button button_search;
+    EditText textWord;
+    TextView meaning;
+    Button buttonSearch;
     String word;
 
+    // DB관련
     SQLiteDatabase db;
     MySQLiteOpenHelper mHelper;
+
+    // 리스트 관련
+    ArrayList<String> words;
+    ArrayAdapter<String> adapter;
+    ListView wordList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        text_word = (EditText) findViewById(R.id.editText_word);
-        button_search = (Button) findViewById(R.id.button_find);
-        find = (TextView) findViewById(R.id.textView_find);
+        // 초기화
+        words = new ArrayList<String>();
 
-        button_search.setOnClickListener((View.OnClickListener)this);
+        // layout 연결
+        textWord = (EditText) findViewById(R.id.editText_word);
+        buttonSearch = (Button) findViewById(R.id.button_find);
+        meaning = (TextView) findViewById(R.id.textView_find);
+        wordList = (ListView) findViewById(R.id.listView_wordList);
+
+        // 리스너 등록
+        buttonSearch.setOnClickListener((View.OnClickListener) this);
+        wordList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String toFind = parent.getItemAtPosition(position).toString();
+                search(toFind, false);
+            }
+        });
+
+        // db
         mHelper = new MySQLiteOpenHelper(this);
-        //dict = new Dictionary("a.dic");
+
+        // list
+        initListView();
+    }
+
+    // listview 초기화
+    public void initListView() {
+        // data
+        db = mHelper.getReadableDatabase();
+        Cursor cursor;
+
+        String sql = "SELECT word from Dictionary";
+        cursor = db.rawQuery(sql, null);
+
+        while (cursor.moveToNext()) {
+            String word = cursor.getString(0);
+            words.add(word);
+        }
+
+        // adapter
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, words);
+
+        // adapter연결
+        wordList.setAdapter(adapter);
+//        wordList.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
     }
 
     @Override
-    public void onClick(View v){
+    public void onClick(View v) {
 
         switch(v.getId()) {
             case R.id.button_find :
-/*                word = text_word.getText().toString();
-                String sql = "select meaning from Dictionary where word = '" + word + "';";
-                //find_db(sql);
-                if(find.equals(""))
-                    find.setText("app��ã��");
-                else
-                    find.setText(dict.find(word));*/
-
-                search();
+                String toFind = textWord.getText().toString();
+                search(toFind, true);
                 break;
         }
     }
 
-    public void search() {
+    // 검색버튼 눌렀을 때
+    public void search(String toFind, Boolean move) {
         db = mHelper.getReadableDatabase();
         Cursor cursor;
-        word = text_word.getText().toString();
 
-        String sql = "SELECT word, meaning from Dictionary where word='" + word + "'";
+        String sql = "SELECT * from Dictionary where word like \"" + toFind + "%\"";
         cursor = db.rawQuery(sql, null);
 
-        String result = "";
-        while (cursor.moveToNext()) {
-            String word = cursor.getString(0);
-            String meaning = cursor.getString(1);
-            result += (word + " : " + meaning + "\n");
+       cursor.moveToFirst();
+
+        int _id = cursor.getInt(0);
+        String word = cursor.getString(1);
+        String result = cursor.getString(2);
+
+        if(result.length()==0) {
+            meaning.setText("not found");
         }
-
-        if(result.length()==0)
-            find.setText("not found");
-        else
-            find.setText(result);
-
+        else {
+//            wordList.getItemAtPosition(_id-1);
+            if(move)
+                wordList.setSelection(_id -1);
+            meaning.setText(result);
+        }
         cursor.close();
         mHelper.close();
     }
 
-
-    public void find_db(String sql) {
-        db = mHelper.getReadableDatabase();
-        Cursor c = db.rawQuery(sql, null);
-        String meaning = "";
-        if (c.moveToFirst()) {
-            do {
-                meaning = c.getString(0);
-//                find.setText(meaning);
-            } while (c.moveToNext());
-        }
-        c.close();
-        db.close();
-    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
