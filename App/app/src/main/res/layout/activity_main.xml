@@ -44,11 +44,11 @@
             android:weightSum="2"
             >
 
-
             <ListView
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="match_parent"
+                android:listSelector="#FFE08C"
                 android:id="@+id/listView_wordList" />
 
             <TextView

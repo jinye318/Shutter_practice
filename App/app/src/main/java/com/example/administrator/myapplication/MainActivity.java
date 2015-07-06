@@ -12,7 +12,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.Adapter;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -58,13 +60,22 @@ public class MainActivity extends Activity implements  View.OnClickListener {
 
         // 리스너 등록
         buttonSearch.setOnClickListener((View.OnClickListener) this);
+        wordList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String toFind = parent.getItemAtPosition(position).toString();
+                search(toFind, false);
+            }
+        });
 
         // db
         mHelper = new MySQLiteOpenHelper(this);
+
         // list
         initListView();
     }
 
+    // listview 초기화
     public void initListView() {
         // data
         db = mHelper.getReadableDatabase();
@@ -83,52 +94,46 @@ public class MainActivity extends Activity implements  View.OnClickListener {
 
         // adapter연결
         wordList.setAdapter(adapter);
+//        wordList.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
     }
 
     @Override
-    public void onClick(View v){
+    public void onClick(View v) {
 
         switch(v.getId()) {
             case R.id.button_find :
-                search();
+                String toFind = textWord.getText().toString();
+                search(toFind, true);
                 break;
         }
     }
 
-    public void search() {
+    // 검색버튼 눌렀을 때
+    public void search(String toFind, Boolean move) {
         db = mHelper.getReadableDatabase();
         Cursor cursor;
-        word = textWord.getText().toString();
 
-        String sql = "SELECT * from Dictionary where word like '" + word + "%'";
+        String sql = "SELECT * from Dictionary where word like \"" + toFind + "%\"";
         cursor = db.rawQuery(sql, null);
 
-    //    String result = "";
-        cursor.moveToFirst();
+       cursor.moveToFirst();
 
         int _id = cursor.getInt(0);
         String word = cursor.getString(1);
         String result = cursor.getString(2);
-/*
-        while (cursor.moveToNext()) {
-            _id = cursor.getInt(0);
-            String word = cursor.getString(1);
-            String meaning = cursor.getString(2);
-            result += (meaning + "\n");
-        }*/
-/*
-        if(result.length()==0)
+
+        if(result.length()==0) {
             meaning.setText("not found");
-        else
+        }
+        else {
+//            wordList.getItemAtPosition(_id-1);
+            if(move)
+                wordList.setSelection(_id -1);
             meaning.setText(result);
-*/
-        wordList.setSelection(_id-1);
-        meaning.setText(result);
+        }
         cursor.close();
         mHelper.close();
     }
-
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
